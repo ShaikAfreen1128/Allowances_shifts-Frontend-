@@ -8,6 +8,7 @@ import {
   Modal,
   Paper,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 
 import { X, Pencil } from "lucide-react";
@@ -20,7 +21,8 @@ const FileInput = () => {
   const navigate = useNavigate();
   const [fileName, setFileName] = useState("");
   const [errorModalOpen, setErrorModalOpen] = useState(false);
-  
+  const [tableLoading, setTableLoading] = useState(false);
+
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupSeverity, setPopupSeverity] = useState("success");
@@ -40,23 +42,61 @@ const FileInput = () => {
     success,
   } = useEmployeeData();
 
-  const handleFileChange = (e) => {
+  // const handleFileChange = (e) => {
+  //   const file = e.target.files[0];
+  //   if (!file) return;
+  //   setFileName(file.name);
+  //   const token = localStorage.getItem("access_token");
+  //   fetchDataFromBackend(file, token);
+  //   setTimeout(() => setFileName(null), 3000);
+  // };
+
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     setFileName(file.name);
+    setTableLoading(true);
     const token = localStorage.getItem("access_token");
-    fetchDataFromBackend(file, token);
-    setTimeout(() => setFileName(null), 3000);
+
+    try {
+      await fetchDataFromBackend(file, token);
+    } finally {
+      setTableLoading(false);
+      setTimeout(() => setFileName(null), 3000);
+    }
   };
+
+  const handleFetchPage = async (filters) => {
+  setTableLoading(true);
+  try {
+    await getProcessedData(filters);
+  } finally {
+    setTableLoading(false);
+  }
+};
+
+
+const handleDownloadTemplate = async () => {
+  try {
+    setTableLoading(true);
+    await downloadExcel();
+  } finally {
+    setTableLoading(false);
+  }
+};
+
+
 
   useEffect(() => {
     if (errorFileLink) {
-      setPopupMessage("File uploaded with errors. Please review.");
-      setPopupSeverity("error");
-      setPopupOpen(true);
+      // setPopupMessage("File uploaded with errors. Please review.");
+      //  setPopupSeverity("error");
+      //  setPopupOpen(true);
 
       setErrorModalOpen(true);
     }
+
   }, [errorFileLink]);
 
   // 🔹 Success popup
@@ -70,10 +110,10 @@ const FileInput = () => {
 
   // 🔹 Error popup
   useEffect(() => {
-    if (error) {
+    if (error&&!errorFileLink) {
       setPopupMessage(error);
       setPopupSeverity("error");
-      setPopupOpen(true);
+       setPopupOpen(true);
     }
   }, [error]);
 
@@ -84,7 +124,7 @@ const FileInput = () => {
   const safeErrorRows = errorRows || [];
 
   return (
-    <Box sx={{ width: "100%", pt: 2, pb: 4,px:2 }}>
+    <Box sx={{ width: "100%", pt: 2, pb: 4, px: 2 }}>
       <Typography variant="h5" fontWeight={600} mb={2}>
         Shift Allowance Data
       </Typography>
@@ -110,9 +150,17 @@ const FileInput = () => {
           {fileName && <Typography variant="body1">{fileName}</Typography>}
         </Stack>
 
-        <Button variant="outlined" onClick={downloadExcel}>
+        {/* <Button variant="outlined" onClick={downloadExcel}>
           Download Template
-        </Button>
+        </Button> */}
+        <Button
+  variant="outlined"
+  onClick={handleDownloadTemplate}
+  disabled={tableLoading}
+>
+  Download Template
+</Button>
+
       </Stack>
 
 
@@ -137,9 +185,12 @@ const FileInput = () => {
             overflow: "auto",
             position: "relative",
             borderRadius: 2,
+            border: "2px solid #000",
+            boxShadow: "none",
+            backgroundColor: "#fff",
           }}
         >
-          
+
           <IconButton
             sx={{ position: "absolute", right: 12, top: 12 }}
             onClick={() => {
@@ -151,14 +202,14 @@ const FileInput = () => {
           </IconButton>
 
 
-          <Typography variant="h6" mb={2}>
-            File Upload Errors
+          <Typography variant="h6" mb={2} sx={{ color: "red", fontWeight: 600 }}>
+            File Processed with Errors
           </Typography>
 
           <Stack direction="column" spacing={2} mb={2}>
             {safeErrorRows.length > 0 && (
               <Stack direction="row" spacing={2}>
-                
+
                 <Button
                   variant="contained"
                   startIcon={<Pencil size={18} />}
@@ -168,6 +219,7 @@ const FileInput = () => {
                     });
                     setErrorModalOpen(false);
                   }}
+                  sx={{ textTransform: "none" }}
                 >
                   Edit
                 </Button>
@@ -177,10 +229,12 @@ const FileInput = () => {
                   <Button
                     variant="outlined"
                     onClick={() => downloadErrorExcel(errorFileLink)}
+                    sx={{ textTransform: "none" }}
                   >
                     Download Error File
                   </Button>
                 )}
+
               </Stack>
             )}
           </Stack>
@@ -188,12 +242,81 @@ const FileInput = () => {
       </Modal>
 
       {/* 🔹 Data Table */}
-      <DataTable
+      {/* <DataTable
         headers={UI_HEADERS}
         rows={rows || []}
         totalRecords={totalRecords || 0}
         fetchPage={getProcessedData}
-      />
+      /> */}
+
+      <Box sx={{ position: "relative" }}>
+        {tableLoading && (
+          <Box
+
+            sx={{
+
+              position: "fixed",
+
+              inset: 0,
+
+              zIndex: 9999,
+
+              display: "flex",
+
+              alignItems: "center",
+
+              justifyContent: "center",
+
+              backgroundColor: "rgba(0, 0, 0, 0.3)",
+
+              backdropFilter: "blur(8px)",
+
+            }}
+          >
+            <Box
+
+              sx={{
+
+                backgroundColor: "white",
+
+                borderRadius: 2,
+
+                padding: 4,
+
+                display: "flex",
+
+                flexDirection: "column",
+
+                alignItems: "center",
+
+                gap: 2,
+
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+
+                minWidth: 200,
+
+              }}
+            >
+              <CircularProgress size={40} />
+              <Typography variant="body1" fontWeight={500}>
+
+                Loading...
+              </Typography>
+            </Box>
+          </Box>
+
+        )}
+
+
+        <DataTable
+          headers={UI_HEADERS}
+          rows={rows || []}
+          totalRecords={totalRecords || 0}
+          fetchPage={handleFetchPage}
+          loading={tableLoading}
+            
+        />
+      </Box>
 
 
       {/* 🔹 Custom Centered Popup */}

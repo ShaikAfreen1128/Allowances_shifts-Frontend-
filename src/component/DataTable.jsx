@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { DataGrid, GridOverlay } from "@mui/x-data-grid";
 import Pagination from "@mui/material/Pagination";
 import { FormHelperText, Tooltip } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+
 import {
   IconButton,
   Portal,
@@ -69,6 +71,7 @@ const DataTable = ({ headers }) => {
     error,
     page,
     totalPages,
+    loading,
     displayRows,
     debouncedFetch,
     handlePageChange,
@@ -78,7 +81,7 @@ const DataTable = ({ headers }) => {
     shiftSummary,
   } = useEmployeeData();
 
-  console.log(totalPages)
+ 
 
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoPosition, setInfoPosition] = useState({ top: 0, left: 0 });
@@ -90,9 +93,15 @@ const DataTable = ({ headers }) => {
   const [popupMessage, setPopupMessage] = useState("");
   const [popupType, setPopupType] = useState("");
   const [popupVisible, setPopupVisible] = useState(false);
+
+  const [downloadLoading, setDownloadLoading] = useState(false);
+
+
+  const [suppressPopup, setSuppressPopup] = useState(false);
+
   const pageSize = 10;
   const isPageNotFull = displayRows.length < pageSize;
-  console.log(isPageNotFull)
+ 
 
 
 
@@ -101,6 +110,8 @@ const DataTable = ({ headers }) => {
     endMonth &&
     (dayjs(endMonth).isBefore(dayjs(startMonth), "month") ||
       dayjs(endMonth).isSame(dayjs(startMonth), "month"));
+
+  
 
   const [info, setInfo] = useState([
     { "A (9PM to 6AM) - ₹500": "" },
@@ -221,67 +232,107 @@ const DataTable = ({ headers }) => {
   });
 
 
-  useEffect(() => {
-    const start = (page - 1) * 10;
+  
 
-    let params = {};
-    const q = searchQuery.trim();
-    const validSearch = q.length > 2;
-    if (validSearch) {
-      if (searchBy === "Emp ID") params.emp_id = q;
-      else if (searchBy === "Account Manager") params.account_manager = q;
-      else if (searchBy === "Client") params.client = q;
-      else if (searchBy === "Department") params.department = q;
-    }
-    if (startMonth) params.start_month = startMonth;
-    if (endMonth) params.end_month = endMonth;
+const buildSearchParams = () => {
+  const params = {};
+  const q = searchQuery.trim();
+  
+  if (q.length > 2) {
+    if (searchBy === "Emp ID") params.emp_id = q;
+    else if (searchBy === "Account Manager") params.account_manager = q;
+    else if (searchBy === "Client") params.client = q;
+    else if (searchBy === "Department") params.department = q;
+  }
 
-    const hasParams = Object.keys(params).length > 0;
+  if (startMonth) params.start_month = startMonth;
+  if (endMonth) params.end_month = endMonth;
 
-    if (hasParams) {
+  return params;
+};
 
-      debouncedFetch(hasParams ? params : {}, page);
-      // debouncedFetch(params, page);
-      //  return;
+useEffect(() => {
+  const params = buildSearchParams();
 
-    } else {
-      getProcessedData(start, 10);
-    }
-  }, [page, searchQuery, searchBy, startMonth, endMonth]);
+  const hasParams = Object.keys(params).length > 0;
+
+  if (hasParams) {
+    debouncedFetch(params, page);
+  } else {
+    getProcessedData((page - 1) * 10, 10);
+  }
+}, [page, searchQuery, searchBy, startMonth, endMonth]);
 
 
 
 
-  const handleDownload = (searchQuery, startMonth, endMonth) => {
 
+// const handleDownload = async (searchQuery, startMonth, endMonth) => {
+//   try {
+//     setDownloadLoading(true);
+
+//     if (searchQuery?.trim() && startMonth) {
+//       await downloadSearchData({
+//         type: "SearchAndMonthRange",
+//         startMonth,
+//         endMonth,
+//         query: searchQuery.trim(),
+//         searchBy,
+//       });
+//       return;
+//     }
+
+//     if (searchQuery?.trim()) {
+//       await downloadSearchData({
+//         type: "Text",
+//         query: searchQuery.trim(),
+//         searchBy,
+//       });
+//       return;
+//     }
+
+//     if (startMonth) {
+//       await downloadSearchData({
+//         type: "MonthRange",
+//         startMonth,
+//         endMonth,
+//       });
+//     }
+//   } finally {
+//     setDownloadLoading(false);
+//   }
+// };
+const handleDownload = async (searchQuery, startMonth, endMonth) => {
+  setDownloadLoading(true); // show circular loader
+  try {
     if (searchQuery?.trim() && startMonth) {
-      return downloadSearchData({
+      await downloadSearchData({
         type: "SearchAndMonthRange",
         startMonth,
         endMonth,
         query: searchQuery.trim(),
         searchBy,
       });
-    }
-
-    if (searchQuery?.trim()) {
-      return downloadSearchData({
+    } else if (searchQuery?.trim()) {
+      await downloadSearchData({
         type: "Text",
         query: searchQuery.trim(),
         searchBy,
       });
-    }
-
-
-    if (startMonth) {
-      return downloadSearchData({
+    } else if (startMonth) {
+      await downloadSearchData({
         type: "MonthRange",
         startMonth,
         endMonth,
       });
+    } else {
+      // Optional: if no filters, download all
+      await downloadSearchData({});
     }
-  };
-
+  } finally {
+    setDownloadLoading(false); // hide loader after download
+  }
+};
 
 
   const handleClear = () => {
@@ -511,6 +562,100 @@ const DataTable = ({ headers }) => {
             }}
           >
 
+            {loading && (
+              <Box
+                sx={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 9999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "rgba(0,0,0,0.3)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <Box
+                  sx={{
+                    backgroundColor: "white",
+                    borderRadius: 2,
+                    padding: 4,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 2,
+                  }}
+                >
+                  <CircularProgress size={40} />
+                  <Typography>Loading...</Typography>
+                </Box>
+              </Box>
+            )}
+
+           {/* {downloadLoading && (
+  <Box
+    sx={{
+      position: "absolute",
+      inset: 0,
+      zIndex: 2000,
+       pointerEvents: "all", 
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255,255,255,0.7)",
+      backdropFilter: "blur(2px)",
+    }}
+  >
+    <Box
+      sx={{
+        backgroundColor: "#fff",
+        borderRadius: 2,
+        px: 3,
+        py: 2,
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        boxShadow: 3,
+      }}
+    >
+      <CircularProgress size={28} />
+      <Typography fontSize="14px">Downloading...</Typography>
+    </Box>
+  </Box>
+)} */}
+
+{downloadLoading && (
+  <Box
+    sx={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 9999,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(0,0,0,0.3)",
+      backdropFilter: "blur(8px)",
+    }}
+  >
+    <Box
+      sx={{
+        backgroundColor: "white",
+        borderRadius: 2,
+        padding: 4,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2,
+      }}
+    >
+      <CircularProgress size={40} />
+      <Typography>Downloading...</Typography>
+    </Box>
+  </Box>
+)}
+
+
+
             <DataGrid
               rows={displayRows}
               columns={columns}
@@ -529,29 +674,29 @@ const DataTable = ({ headers }) => {
               disableColumnSorting
               disableExtendRowFullWidth
 
-               slots={{
-    noRowsOverlay: () => (
-      <Box
-        sx={{
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="body2" color="error.main">
-          {error || "No data found"}
-        </Typography>
-      </Box>
-    ),
-  }}
+              slots={{
+                noRowsOverlay: () => (
+                  <Box
+                    sx={{
+                      height: "100%",
+                      width: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Typography variant="body2" color="error.main">
+                      {error || "No data found"}
+                    </Typography>
+                  </Box>
+                ),
+              }}
 
               sx={{
                 // border: "1px solid #D3D3D3",
                 // maxHeight: "80vh",
                 borderTop: "1px solid #D3D3D3",
-                borderLeft: "1px solid #D3D3D3",
+                // borderLeft: "1px solid #D3D3D3",
                 // borderRight: "1px solid #D3D3D3",
                 borderRight: "none",
                 borderBottom: isPageNotFull ? "none" : "1px solid #D3D3D3",
@@ -566,10 +711,16 @@ const DataTable = ({ headers }) => {
                 },
                 "&.MuiDataGrid-root": {
                   borderRight: "none",
+                  borderLeft: "none",
                 },
                 "&.MuiDataGrid-withBorderColor": {
                   borderRight: "none",
                 },
+                "& .MuiDataGrid-row": {
+                  borderLeft: "1px solid #D3D3D3",
+                  borderRight: "1px solid #D3D3D3",
+                },
+
 
                 "& .MuiDataGrid-scrollbar": {
                   display: "none !important",
@@ -578,6 +729,8 @@ const DataTable = ({ headers }) => {
                 "& .MuiDataGrid-columnHeaders": {
 
                   borderBottom: "1px solid #fff",
+                  borderLeft: "1px solid #D3D3D3",
+                  borderRight: "1px solid #D3D3D3",
                 },
 
                 "& .MuiDataGrid-columnHeader": {
@@ -628,6 +781,7 @@ const DataTable = ({ headers }) => {
                 onChange={(e, value) => handlePageChange(value)}
                 color="primary"
                 size="small"
+                disabled={loading}
                 siblingCount={1}
                 boundaryCount={1}
                 shape="rounded"
