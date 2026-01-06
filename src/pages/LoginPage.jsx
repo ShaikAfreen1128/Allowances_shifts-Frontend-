@@ -42,23 +42,14 @@ export default function LoginPage() {
   };
  
   return (
-<<<<<<< Updated upstream
     <div className="h-screen w-full bg-linear-to-br from-gray-50 via-blue-50 to-gray-100 relative">
       <div className="absolute inset-0 overflow-hidden">
-=======
-    <div className="max-h-screen sm:h-screen w-full bg-linear-to-br from-gray-50 via-blue-50 to-gray-100 relative overflow-x-hidden overflow-y-hidden sm:overflow-y-hidden">
-      <div className="absolute inset-0 overflow-hidden h-full">
->>>>>>> Stashed changes
         <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute top-0 -right-4 w-72 h-72 bg-gray-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
- 
-<<<<<<< Updated upstream
-      <div className="relative z-10 h-screen flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
-=======
       <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 lg:px-8 py-12 ovef">
->>>>>>> Stashed changes
+
         <div className="w-full lg:w-1/2 max-w-2xl mb-12 lg:mb-0 lg:pr-16">
           <div className="space-y-8 text-center lg:text-left">
             <div className="inline-block">
