@@ -48,7 +48,7 @@ export default function LoginPage() {
         <div className="absolute top-0 -right-4 w-72 h-72 bg-gray-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
-      <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 lg:px-8 py-12 ovef">
+      <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
 
         <div className="w-full lg:w-1/2 max-w-2xl mb-12 lg:mb-0 lg:pr-16">
           <div className="space-y-8 text-center lg:text-left">
