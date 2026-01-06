@@ -95,7 +95,6 @@ const updateShift = (key, value) => {
       };
 
       await updateEmployeeShift(
-        token,
         data.emp_id,
         data.duration_month,
         data.payroll_month,

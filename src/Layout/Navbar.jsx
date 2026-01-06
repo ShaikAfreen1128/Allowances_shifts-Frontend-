@@ -9,7 +9,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="flex justify-end items-center bg-white shadow px-4 py-2 relative z-5">
+    <header className="flex justify-end items-center bg-white shadow px-4 py-2 relative z-100">
       <div className="relative">
         <button
           onClick={() => setDropdownOpen((prev) => !prev)}

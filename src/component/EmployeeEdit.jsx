@@ -42,7 +42,7 @@ const EmployeeEdit = () => {
     if (!token) return;
 
     try {
-      const data = await correctEmployeeRows(token, [editRow]);
+      const data = await correctEmployeeRows([editRow]);
       let message = "";
 
       if (data && (data.success === true || (data.message && data.message.toLowerCase().includes("success")))) {

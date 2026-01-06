@@ -24,7 +24,16 @@ export const UI_HEADERS = [
 ];
 
 export const EXPORT_HEADERS = [
-  ...UI_HEADERS,
+  // ...UI_HEADERS,
+  "Emp ID",
+  "Emp Name",
+  "Department",
+  "Shift Details",
+  "Account Manager",
+  "Client",
+  "Duration Month",
+  "Payroll Month",
+  "Total Allowances",
   "Project",
   "Practice Lead/ Head",
   "Delivery/ Project Manager",
@@ -121,11 +130,9 @@ export const useEmployeeData = () => {
   const getProcessedData = useCallback(
     async (start = 0, limit = 10, params = filters) => {
 
-      if (!token) return;
-
       try {
         setLoading(true);
-        const res = await fetchEmployees({ token, start, limit, params });
+        const res = await fetchEmployees({start, limit, params });
 
         const employees = Array.isArray(res?.data?.employees)
           ? res.data.employees
@@ -141,11 +148,6 @@ export const useEmployeeData = () => {
 
         setRows(mapped);
         setDisplayRows(mapped);
-        // setTotalRecords(res?.total_records || mapped.length);
-        // setTotalPages(
-        //   Math.ceil((res?.total_records || mapped.length) / limit)
-        // );
-
         const total = res?.total_records ?? 0;
 
         setTotalRecords(total);
@@ -160,32 +162,30 @@ export const useEmployeeData = () => {
           head_count: shiftDetails["head_count"] ?? 0,
         });
 
-       if ((res?.total_records ?? 0) === 0) {
-  setError("No data found");
-} else {
-  setError("");
-}
+        if ((res?.total_records ?? 0) === 0) {
+          setError("No data found");
+        } else {
+          setError("");
+        }
 
-      }catch (error) {
-  const message =
-    error?.response?.data?.detail || "Failed to fetch data";
+      } catch (error) {
+        const message =
+          error?.response?.data?.detail ||error.message|| "Failed to fetch data";
+          console.log(message)
 
-  setError(message);
-  setRows([]);
-  setDisplayRows([]);
-  setShiftSummary(null);
-  setTotalRecords(0);
-  setTotalPages(0);
-}
- finally {
+        setError(message);
+        setRows([]);
+        setDisplayRows([]);
+        setShiftSummary(null);
+        setTotalRecords(0);
+        setTotalPages(0);
+      }
+      finally {
         setLoading(false);
       }
     },
     [token]
   );
-
-
-  console.log(totalPages)
 
 
   const applyFilters = useCallback(
@@ -230,7 +230,6 @@ export const useEmployeeData = () => {
       setLoadingDetail(true);
       try {
         const emp = await fetchEmployeeDetail(
-          token,
           emp_id,
           duration_month,
           payroll_month
@@ -247,7 +246,6 @@ export const useEmployeeData = () => {
 
 
   const fetchDataFromBackend = async (file) => {
-    if (!token) return;
 
     setLoading(true);
     setError("");
@@ -256,34 +254,52 @@ export const useEmployeeData = () => {
     setSuccess("");
 
     try {
-      const res = await uploadFile(token, file);
+      const res = await uploadFile(file);
       setSuccess(res.message || "File uploaded successfully");
 
       const start = (page - 1) * 10;
       getProcessedData(start, 10, buildSearchParams(filters));
     } catch (err) {
-      if (err?.detail) {
-        if (err.detail.message) setError(err.detail.message);
-        if (err.detail.error_file)
-          setErrorFileLink(err.detail.error_file);
-        if (err.detail.error_rows)
-          setErrorRows(err.detail.error_rows);
+      const errorDetail = err?.detail;
+
+      if (errorDetail) {
+        const { message, error_file, error_rows } = errorDetail;
+
+        if (message) setError(message);
+        if (error_file) setErrorFileLink(error_file);
+        if (error_rows) setErrorRows(error_rows);
       } else {
         setError("Network error");
       }
-    } finally {
+    }
+    finally {
       setLoading(false);
     }
   };
 
 
 
-  const downloadExcel = useCallback(() => {
-    const data = [Object.fromEntries(EXPORT_HEADERS.map((h) => [h, ""]))];
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Employee Data");
-    XLSX.writeFile(wb, "Allowance_Template.xlsx");
+  // const downloadExcel = useCallback(() => {
+  //   const data = [Object.fromEntries(EXPORT_HEADERS.map((h) => [h, ""]))];
+  //   const ws = XLSX.utils.json_to_sheet(data);
+  //   const wb = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(wb, ws, "Employee Data");
+  //   XLSX.writeFile(wb, "Allowance_Template.xlsx");
+  // }, []);
+  const downloadExcel = useCallback(async () => {
+    return new Promise((resolve) => {
+      const data = [Object.fromEntries(EXPORT_HEADERS.map((h) => [h, ""]))];
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Employee Data");
+
+      XLSX.writeFile(wb, "Allowance_Template.xlsx");
+
+      // allow React to paint loader
+      setTimeout(() => {
+        resolve();
+      }, 0);
+    });
   }, []);
 
 
@@ -292,10 +308,10 @@ export const useEmployeeData = () => {
     async ({ query, searchBy, startMonth, endMonth }) => {
       const params = buildSearchParams({ query, searchBy, startMonth, endMonth });
 
-      if (!Object.keys(params).length) {
-        alert("Apply filters before downloading");
-        return;
-      }
+      // if (!Object.keys(params).length) {
+      //   alert("Apply filters before downloading");
+      //   return;
+      // }
 
       try {
         const res = await axios.get(`${backendApi}/excel/download`, {
@@ -311,8 +327,7 @@ export const useEmployeeData = () => {
         link.click();
         URL.revokeObjectURL(url);
       } catch (err) {
-        console.log("Download failed", err);
-        alert("Failed to download data");
+        alert("Failed to download data",err);
       }
     },
     [token]
